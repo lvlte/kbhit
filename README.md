@@ -26,7 +26,8 @@ while True:
 
 ### Non-ASCII characters
 
-Unicode charset is supported provided that your system use the proper encoding (eg. utf-8).
+Unicode charset is supported provided that your system use the proper encoding (eg. utf-8).  
+See [`PYTHONIOENCODING`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONIOENCODING)
 
 ### CTRL Keys
 
