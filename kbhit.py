@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 '''
 A Python class implementing KBHIT, the standard keyboard-interrupt poller.
-Works transparently on Windows and Posix (Linux, Mac OS X).  Doesn't work
-with IDLE.
+Works transparently on Windows and Posix (Linux, Mac OS X) except for CTRL keys.
+Doesn't work from REPL nor with IDLE.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
 '''
 
 import os
@@ -72,7 +70,7 @@ class KBHit:
         '''
 
         if os.name == 'nt':
-            return msvcrt.getch()
+            return msvcrt.getwch()
 
         elif self.ungetched != self.fd:
             c = os.fdopen(self.ungetched, 'r').read(1)
@@ -92,7 +90,7 @@ class KBHit:
             raise TypeError('ungetch() argument must be a unicode character')
 
         if os.name == 'nt':
-            msvcrt.ungetch(char)
+            msvcrt.ungetwch(char)
             self.ungetched = 1
 
         else:
