@@ -37,31 +37,33 @@ class KBHit:
         '''
 
         if os.name == 'nt':
-            pass
+            # On Windows, use this as a flag meaning a char has been pushed into
+            # the console buffer using ungetch().
+            self.ungetched = False
 
         else:
-
             # Save the terminal settings
             self.fd = sys.stdin.fileno()
             self.new_term = termios.tcgetattr(self.fd)
             self.old_term = termios.tcgetattr(self.fd)
 
             # New terminal setting unbuffered
-            self.new_term[3] = (self.new_term[3] & ~
-                                termios.ICANON & ~termios.ECHO)
+            self.new_term[3] = (self.new_term[3] & ~termios.ICANON & ~termios.ECHO)
             termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.new_term)
 
             # Support normal-terminal reset at exit
             atexit.register(self.set_normal_term)
 
+            # Used for ungetch(), if different than stdin fileno, then a char is
+            # waiting to be read from that fd.
+            self.ungetched = sys.stdin.fileno()
+
     def set_normal_term(self):
-        ''' Resets to normal terminal.  On Windows this is a no-op.
+        ''' Resets to normal terminal. Called on exit.
+            On Windows this is a no-op.
         '''
 
-        if os.name == 'nt':
-            pass
-
-        else:
+        if os.name != 'nt':
             termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.old_term)
 
     def getch(self):
@@ -69,13 +71,35 @@ class KBHit:
             Should not be called in the same program as getarrow().
         '''
 
-        s = ''
-
         if os.name == 'nt':
-            return msvcrt.getch().decode('utf-8')
+            return msvcrt.getch()
+
+        elif self.ungetched != self.fd:
+            c = os.fdopen(self.ungetched, 'r').read(1)
+            self.ungetched = self.fd
+            return c
 
         else:
             return sys.stdin.read(1)
+
+    def ungetch(self, char):
+        ''' Opposite of getch. Cause the character to be “pushed back” into the
+            console buffer; it will be the next character read by getch().
+            Expect a Unicode value on Windows.
+        '''
+
+        if not isinstance(char, str) or len(char) > 1:
+            raise TypeError('ungetch() argument must be a unicode character')
+
+        if os.name == 'nt':
+            msvcrt.ungetch(char)
+            self.ungetched = 1
+
+        else:
+            r, w = os.pipe()
+            self.ungetched = r
+            os.write(w, char.encode('utf-8'))
+            os.close(w)
 
     def getarrow(self):
         ''' Returns an arrow-key code after kbhit() has been called. Codes are
@@ -98,13 +122,18 @@ class KBHit:
         return vals.index(ord(c.decode('utf-8')))
 
     def kbhit(self):
-        ''' Returns True if keyboard character was hit, False otherwise.
+        ''' Returns True if keyboard character was hit or pushed with ungetch(),
+            False otherwise.
         '''
+
         if os.name == 'nt':
+            if self.ungetched:
+                self.ungetched = False
+                return True
             return msvcrt.kbhit()
 
         else:
-            dr, dw, de = select([sys.stdin], [], [], 0)
+            dr, dw, de = select([sys.stdin, self.ungetched], [], [], 0)
             return dr != []
 
 
@@ -113,6 +142,19 @@ if __name__ == "__main__":
 
     kb = KBHit()
 
+    # Using signal to handle sig keys
+    import signal
+    import sys
+
+    def interrupt(sig, _):
+        print('SIGINT (Signal Interrupt) (2) : Interrupt from keyboard')
+        kb.set_normal_term()
+        sys.exit(2)
+
+    # Register handler for interruption (CTRL + C).
+    # Alternatively you can catch KeyboardInterrupt exception in the while loop.
+    signal.signal(signal.SIGINT, interrupt)
+
     print('Hit any key, or ESC to exit')
 
     while True:
@@ -120,7 +162,6 @@ if __name__ == "__main__":
         if kb.kbhit():
             c = kb.getch()
             if ord(c) == 27:  # ESC
+                print('exiting...')
                 break
-            print(c)
-
-    kb.set_normal_term()
+            print(c, ord(c))
