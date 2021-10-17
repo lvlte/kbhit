@@ -146,7 +146,6 @@ if __name__ == "__main__":
 
     def interrupt(sig, _):
         print('SIGINT (Signal Interrupt) (2) : Interrupt from keyboard')
-        kb.set_normal_term()
         sys.exit(2)
 
     # Register handler for interruption (CTRL + C).

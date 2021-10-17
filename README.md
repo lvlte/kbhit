@@ -31,7 +31,7 @@ Unicode charset is supported provided that your system use the proper encoding (
 ### CTRL Keys
 
 You can use `getarrow()` to get arrow-key codes. The drawback is that you can't `getch()` regular characters when your program is already expecting CTRL keys.
-In other words, you can't use both functions in the same script. 
+In other words, you can't use both functions in the same script.
 
 ### SIG Keys
 
@@ -44,7 +44,6 @@ import sys
 
 def interrupt(sig, _):
     print('SIGINT (Signal Interrupt) (2) : Interrupt from keyboard')
-    kb.set_normal_term()
     sys.exit(2)
 
 # Register handler for interruption (CTRL + C).
